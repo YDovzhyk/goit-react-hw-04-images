@@ -1,54 +1,40 @@
-import { Component } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useEffect } from "react";
 import PropTypes from 'prop-types';
 
 import s from "./modal.module.css"
 
-class Modal extends Component {
+const Modal = ({close, content}) => {
+    useEffect(() => {
+        document.addEventListener("keydown", closeModal);
+        return () => document.removeEventListener("keydown", closeModal)
+    }, []);
 
-    static defaultProps = {
-        close: () => {}
-    }
-
-    static propTypes = {
-        close: PropTypes.func,
-    }
-
-    componentDidMount(){
-        document.addEventListener("keydown", this.closeModal)
-    }
-
-    componentWillUnmount() {
-        document.removeEventListener("keydown", this.closeModal)
-    }
-
-    closeModal = ({target, currentTarget, code}) => {
+    const closeModal = ({target, currentTarget, code}) => {
         if(target === currentTarget || code === "Escape") {
-            this.props.close()
+            close()
         }
-    }
-
-    render(){
-        const {closeModal} = this;
+    };
         return (
             <div className={s.overlay} onClick={closeModal}>
                 <div className={s.modal}>
                     <span onClick={closeModal} className={s.close}>X</span>
-                    <img className={s.photo} src={this.props.content.largeImageURL} alt={this.props.content.tags}/>
+                    <img className={s.photo} src={content.largeImageURL} alt={content.tags}/>
                 </div>
             </div>
         )
     }
-}
+
 
 export default Modal;
 
 Modal.defaultProps = {
     content: {},
+    close: () => {}
 }
 
 Modal.propTypes = {
-    status: PropTypes.bool.isRequired,
-    data: PropTypes.object,
+    close: PropTypes.func,
     content: PropTypes.shape({
         largeImageURL: PropTypes.string.isRequired,
         id: PropTypes.number.isRequired,

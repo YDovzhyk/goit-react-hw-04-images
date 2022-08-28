@@ -1,50 +1,36 @@
-import { Component } from "react";
+import { useState } from "react";
 import PropTypes from 'prop-types';
 import { nanoid } from 'nanoid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 
-
-
 import s from "./searchbar.module.css";
 
-class Searchbar extends Component {
-    static defaultProps = {
-        onsubmit: () => {}
-    }
+const initialState = {
+    id: "",
+    search: "",
+}
 
-    static propTypes = {
-        onSubmit: PropTypes.func,
-    }
-
-    state = {
-        search: "",
-        id: "",
-        }
-
-    searchId = nanoid()
-        
-    handleChange = ({target}) => {
-        const {value, name} = target;
-        this.setState({
-            [name]: value,
-        })
-        this.setState({id: nanoid()});
-    }
-
-    handleSubmit = e => {
-        e.preventDefault();
-        this.props.onSubmit(this.state);
-        this.reset();
-    };
+const Searchbar = ({onSubmit}) => {
+    const [state, setState] = useState({...initialState});
     
-    reset = () => {
-        this.setState({search: "", id: "",});
+    const handleInputChange = event => {
+        const { name, value } = event.currentTarget;
+        let id = nanoid();
+        setState(prevState => ({
+            ...prevState,
+            [name]: value,
+            id: id,
+        }))
     };
 
-render() {
-    const {handleChange, handleSubmit, searchId} = this;
-        const {search} = this.state;
+    const handleSubmit = e => {
+        e.preventDefault();
+        onSubmit({...state});
+        setState({...initialState})
+    }
+
+    const {id, search} = state;
     return (
     <header className={s.searchbar}>
         <form onSubmit={handleSubmit} className={s.form}>
@@ -53,7 +39,7 @@ render() {
             </button>
 
             <input
-                id={searchId}
+                id={id}
                 name="search"
                 className={s.input}
                 type="text"
@@ -61,12 +47,20 @@ render() {
                 autoFocus
                 placeholder="Search images and photos"
                 value={search}
-                onChange={handleChange}
+                onChange={handleInputChange}
             />
         </form>
     </header>
     )
 }
-}
+
 
 export default Searchbar;
+
+Searchbar.defaultProps = {
+    onSubmit: () => {},
+}
+
+Searchbar.propTypes = {
+    onSubmit: PropTypes.func,
+}

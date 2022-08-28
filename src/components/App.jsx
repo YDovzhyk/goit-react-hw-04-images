@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import Searchbar from "./Searchbar/Searchbar"
 import ImageGallery from "./ImageGallery/ImageGallery"
@@ -7,112 +7,88 @@ import Modal from "./Modal/Modal"
 import Loader from "./Loader/Loader";
 import s from "./Searchbar/searchbar.module.css"
 
-export class App extends Component {
-    state = {
-        items: [],
-        loading: false,
-        error: null,
-        searchQuery: "",
-        page: 1,
-        modalOpen: false,
-        modalContent: {
-            id: "",
-            largeImageURL: "",
-            tags: "",
-        }
-    }
+const modalInitialState = {
+    largeImageURL: "",
+    tags: "",
+}
+export const App = () => {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [page, setPage] = useState(1);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalContent, setModalContent] = useState({...modalInitialState});
 
-    componentDidUpdate(_, prevState) {
-        const {page, searchQuery, idSearchQuery} = this.state;
-        if((searchQuery && prevState.searchQuery !== searchQuery) || page > prevState.page || idSearchQuery !== prevState.idSearchQuery) {
-            this.fetchPhoto();
-        }
-    }
-
-        async fetchPhoto() {
-            const {page, searchQuery} = this.state;
-            this.setState({
-                loading: true,
-            });
-        
+    useEffect(()=> {
+        const fetchImage = async () =>  {        
             try {
+                setLoading(true);
                 const data = await getPhoto(page, searchQuery);
-                this.setState(({items}) => ({
-                    items: [...items, ...data.hits]
-                    
-                }))
+                setItems(prevItems => [...prevItems, ...data.hits])
             } catch (error) {
-                this.setState({
-                    error,
-                })
+                setError(error);
             }
             finally {
-                this.setState({ loading: false })
+                setLoading(false);
             }
             }
-        
-        formSubmitHandler = data => {
-            const searchValue = data.search;
-            const idSearchValue = data.id;
-            this.setState({ searchQuery: searchValue }) 
-            this.setState({ idSearchQuery: idSearchValue })
-            this.setState({ items: [] })
-        };
+            if(searchQuery) {
+                fetchImage()
+            }    
+    }, [searchQuery, page]);
 
-        loadMore = () => {
-            this.setState(({page}) => ({
-                page: page + 1
-            }))
-        };
-
-        openModal = (modalContent) => {
-            this.setState({
-                modalOpen: true,
-                modalContent,
-            })
+    const formSubmitHandler = searchData => {
+        setSearchQuery(searchData.search)
+        setPage(1)
+        if (searchData.search !== searchQuery) {
+            setItems([])
+        } 
+        if (page > 1 && searchData.search === searchQuery) {
+            setItems([])
         }
-    
-        closeModal = ()=> {
-            this.setState({
-                modalOpen: false,
-                modalContent: {
-                    id: "",
-                    largeImageURL: "",
-                    tags: "",
-                }
-            })
-        }
+    };
 
-    render(){
-        const {formSubmitHandler, loadMore, openModal, closeModal} = this;
-        const {items, loading, error, modalOpen, modalContent} = this.state;
 
-        const isItemPresent = Boolean(items.length);
-        const isItemAbsent = Boolean(items.length === 0 && this.state.searchQuery !== "" && loading === false);
+    const loadMore = () => setPage(prevPage => prevPage + 1);
+
+    const openModal = (modalContent) => {
+        setModalOpen(true);
+        setModalContent({...modalContent});
+    }
+
+    const closeModal = ()=> {
+        setModalOpen(false);
+        setModalContent({...modalInitialState});
+    }
+
+    const isImagePresent = Boolean(items.length);
+    const isImageAbsent = Boolean(items.length === 0 && searchQuery !== "");
 
         return (
         <div className={s.container}>
-            {modalOpen && <Modal close={closeModal} content={modalContent} status={loading}/>} 
+            {modalOpen && <Modal close={closeModal} content={modalContent}/>} 
             <Searchbar onSubmit={formSubmitHandler}/>
-            {isItemPresent && <ImageGallery itemsData={this.state.items} onClick={openModal}/>}
+            {isImagePresent && <ImageGallery itemsData={items} onClick={openModal}/>}
             {loading && <Loader/>}
-            {isItemPresent && <button className={s.buttonLoad} onClick={loadMore}>load more</button>}
-            {isItemAbsent && <p>Sorry, we didn't find any photos for your request.</p>}
+            {isImagePresent && <button className={s.buttonLoad} onClick={loadMore}>load more</button>}
+            {isImageAbsent && <p>Sorry, we didn't find any photos for your request.</p>}
             {error && <p>Failed to upload photos.</p>}
         </div>
         
         )
     }
-}
+
 
 export default App;
 
 App.defaultProps = {
     data: {},
+    fetchImage: () => {},
 }
 
 App.propTypes = {
-    fetchPhoto: PropTypes.func,
+    fetchImage: PropTypes.func,
     formSubmitHandler: PropTypes.func,
     data: PropTypes.shape({
         search: PropTypes.string,
