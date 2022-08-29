@@ -49,8 +49,7 @@ export const App = () => {
         }
     };
 
-
-    const loadMore = () => setPage(prevPage => prevPage + 1);
+    const loadMore = () => setPage(page + 1);
 
     const openModal = (modalContent) => {
         setModalOpen(true);
